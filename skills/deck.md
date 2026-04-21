@@ -199,6 +199,43 @@ Use real numbers from the research. If estimating, state assumptions in a `.card
 
 If the target's business model supports it, include an interactive calculator section using HTML range inputs and vanilla JavaScript. No frameworks.
 
+## Annotation Layer (REQUIRED)
+
+Every case prep must include a self-contained annotation layer so the presenter can highlight passages and write margin notes while reading for prep. This is a client-side, localStorage-backed overlay that does not alter the underlying document — it re-applies annotations on page load by matching text within section IDs.
+
+**Reference implementation:** `~/onchain-realestate/decks/leyad/case-prep.html` — copy the annotation CSS block, HTML scaffold (`.ann-toolbar`, `#ann-panel`, `#ann-edge-tab`), and the `(function(){ ... })()` annotation IIFE verbatim. Only change the `STORAGE_KEY` at the top to namespace the target: `'ore-annotations-[target-name-lowercase]-caseprep'`.
+
+**UX (non-negotiable):**
+
+1. Text selection anywhere in the document shows a small floating toolbar above the selection with two buttons: **Highlight** and **Note**.
+2. **Highlight** wraps the selection in `<mark class="ann-hl" data-ann-id="...">` with a subtle accent-tinted background.
+3. **Note** does the highlight plus opens a card on the right-side panel with the quoted text, an editable textarea, a timestamp, and a delete button.
+4. Right panel is fixed top-right on viewports ≥ 1200px; collapses to an edge tab ("Notes") that slides out as an overlay on narrower viewports.
+5. Panel header has three actions: **Export** (markdown to clipboard), **Clear** (wipe with confirmation), close button (×).
+6. Two-way linking: hovering a note pulses its in-text highlight; clicking a highlight scrolls the corresponding note into view; clicking a note's quote scrolls the document to its highlight.
+7. Markdown export format:
+   ```
+   # [Target] Case Prep — Notes
+
+   > quoted text
+
+   note text
+
+   _Apr 21 · 3:47 PM_
+
+   ---
+   ```
+8. Keyboard shortcut: `Cmd/Ctrl+Shift+N` toggles the panel.
+9. Annotations persist across reloads via `localStorage`. Each document gets its own key; annotations don't leak between targets.
+10. Print: panel and toolbar hidden, highlights remain visible on the printed page.
+
+**Why required:** Case preps are long (5,000+ words, 15+ sections). Reading them on screen without an annotation tool means the presenter either prints the doc and loses portability, or uses an external note app and loses context linking. Built-in annotation makes the doc the source of truth through meeting prep and into follow-up.
+
+**Brand compliance:**
+- Highlight tint: `rgba(33,34,67,0.14)` (the `--accent` ORE navy at low opacity)
+- Panel, cards, borders: existing `--accent`, `--border`, `--card`, DM Sans font
+- Inline SVG for icons (pencil, note, trash, close) — no emoji, no external icon libraries
+
 ## Quality Standards
 - Minimum 5,000 words of explanatory content
 - Every section must TEACH, not just list — write for someone intelligent but unfamiliar with this industry
@@ -215,6 +252,8 @@ If the target's business model supports it, include an interactive calculator se
 - Do not use external images, icons, or CDN beyond Google Fonts
 - Do not use JavaScript frameworks — vanilla JS only
 - Do not copy Nesto content — use its STRUCTURE and DEPTH as template, all content must be original
+- Do not omit the annotation layer — it is REQUIRED on every case prep
+- Do not share the `STORAGE_KEY` across targets — each case prep must namespace its localStorage so annotations don't cross-contaminate between clients
 
 ## Save Location
 Save as: `~/onchain-realestate/decks/[target-name-lowercase]/case-prep.html` (same target folder as the research brief — all artifacts live together).
@@ -224,6 +263,7 @@ Summarize for the user:
 - The top 3 strongest arguments in the prep
 - The top 3 hardest questions the target is likely to ask
 - Any areas where you had to make assumptions
+- Confirm the annotation layer is wired up: test by selecting text and verifying the toolbar appears, then check that reloading the page preserves annotations
 
 Then ask: **"Ready for me to build the full deck, or do you want to iterate on the case prep first?"**
 
