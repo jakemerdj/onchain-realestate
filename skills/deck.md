@@ -295,11 +295,18 @@ The deck is a single self-contained HTML file.
 #sidebar::-webkit-scrollbar { width: 4px; }
 #sidebar::-webkit-scrollbar-thumb { background: #444; }
 #sidebar-handle {
-  position: absolute; top: 0; right: 0; width: 5px; height: 100%;
-  cursor: ew-resize; background: transparent; z-index: 10;
-  transition: background 0.15s ease-in-out;
+  /* Large hit area: 10px wide, full viewport height, pinned to viewport (not sidebar scroll).
+     `left` is set dynamically by JS to track the sidebar's right edge. */
+  position: fixed; top: 0; height: 100vh; width: 10px;
+  cursor: ew-resize; background: transparent; z-index: 100;
+  transition: background-color 0.15s ease-in-out;
 }
-#sidebar-handle:hover, #sidebar-handle.dragging { background: var(--accent); }
+/* Thin 2px accent stripe centered inside the 10px hit area — only the stripe lights up on hover/drag. */
+#sidebar-handle::before {
+  content: ""; position: absolute; top: 0; left: 4px; width: 2px; height: 100%;
+  background: transparent; transition: background 0.15s ease-in-out;
+}
+#sidebar-handle:hover::before, #sidebar-handle.dragging::before { background: var(--accent); }
 body.resizing-sidebar { cursor: ew-resize; user-select: none; -webkit-user-select: none; }
 body.resizing-sidebar * { pointer-events: none; }
 body.resizing-sidebar #sidebar-handle { pointer-events: auto; }
@@ -349,10 +356,18 @@ Because `.thumb-num` uses em-based insets (`top: 0.5em; right: 0.6em`), setting 
   var handle = document.getElementById('sidebar-handle');
   if(!handle) return;
   var MIN = 140, MAX = 480, KEY = 'ore-deck-sidebar-width';
+  // Handle is position:fixed, so its `left` must be set to track the sidebar's right edge.
+  // 10px hit area centered on the edge -> left = sidebarWidth - 5.
+  function positionHandle(){
+    var sw = sidebar.getBoundingClientRect().width;
+    handle.style.left = (sw - 5) + 'px';
+  }
   try{
     var saved = parseInt(localStorage.getItem(KEY), 10);
     if(saved >= MIN && saved <= MAX){ sidebar.style.width = saved + 'px'; scaleThumbs(); }
   }catch(e){}
+  positionHandle();
+  window.addEventListener('resize', positionHandle);
   var dragging = false, startX = 0, startW = 0;
   handle.addEventListener('mousedown', function(e){
     e.preventDefault();
@@ -365,6 +380,7 @@ Because `.thumb-num` uses em-based insets (`top: 0.5em; right: 0.6em`), setting 
     var w = startW + (e.clientX - startX);
     if(w < MIN) w = MIN; if(w > MAX) w = MAX;
     sidebar.style.width = w + 'px';
+    positionHandle();
     scaleThumbs();
     scaleMain();
   });
