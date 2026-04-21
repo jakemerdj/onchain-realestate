@@ -1,0 +1,15 @@
+.DS_Store
+.claude/worktrees/
+.claude/sessions/
+.claude/cache/
+.claude/shell-snapshots/
+.claude/file-history/
+node_modules/
+.next/
+.env
+.env.*
+directory/
+
+# decks/ is its own repo at github.com/onchain-realestate/decks.git
+decks/
+
