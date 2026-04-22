@@ -109,7 +109,7 @@ Your output must match the Nesto case prep's depth, structure, and explanatory q
 
 ## Document Structure
 
-Produce a single self-contained HTML file with these sections (adapt topics to the target, but maintain this structural pattern):
+Produce a single self-contained HTML file with these sections (adapt topics to the target, but maintain this structural pattern). **Critical ordering rule: the Anticipated Q&A section is ALWAYS the last numbered section**, regardless of how many other sections the case prep includes. The presenter uses the doc linearly for meeting prep; ending on the Q&A is what leaves them primed to handle objections live.
 
 ```
 1. What is [Target]? — Business model explained for a non-expert
@@ -122,8 +122,9 @@ Produce a single self-contained HTML file with these sections (adapt topics to t
 10. Capital velocity / efficiency analysis — Quantitative case with real numbers
 11. A realistic pilot proposal — Scope, cost, timeline, team requirements
 12. Strategic arguments — Why this target should move now
-13. Anticipated Q&A — 8-12 hard questions with framework-based answers
-14. Presentation strategy — Structure, timing, emphasis points
+13. Presentation strategy — Structure, timing, emphasis points
+14+. [Additional sections as needed — regulatory landscape, real precedents, addressable investor types, etc.]
+LAST. Anticipated Q&A — 8-12 hard questions with framework-based answers (ALWAYS the final section)
 ```
 
 **For persona targets:** Frame as "companies like yours" throughout. Use industry-wide stats and representative examples rather than company-specific data.
@@ -232,9 +233,61 @@ Every case prep must include a self-contained annotation layer so the presenter 
 **Why required:** Case preps are long (5,000+ words, 15+ sections). Reading them on screen without an annotation tool means the presenter either prints the doc and loses portability, or uses an external note app and loses context linking. Built-in annotation makes the doc the source of truth through meeting prep and into follow-up.
 
 **Brand compliance:**
-- Highlight tint: `rgba(33,34,67,0.14)` (the `--accent` ORE navy at low opacity)
+- Highlight tint: `#ffea5e` (classic highlighter yellow) — hover `#ffd92b`
 - Panel, cards, borders: existing `--accent`, `--border`, `--card`, DM Sans font
-- Inline SVG for icons (pencil, note, trash, close) — no emoji, no external icon libraries
+- Inline SVG for icons (pencil, note, trash, close, eraser) — no emoji, no external icon libraries
+- Highlight marks use `padding: 0; box-decoration-break: clone` to prevent letter-spacing shifts when wrapping across line breaks
+- When the notes panel opens on desktop (≥1200px), the document shifts left via `body.ann-panel-open { padding-right: 332px }` so no content is hidden under the panel; below 1200px the panel overlays as a slide-in drawer
+- Multi-paragraph selections: wrap each text-node fragment in its own `<mark>` sharing the same `data-ann-id` (never try to span a single `<mark>` across block elements); `deleteAnnotation` and hover-pulse handlers use `querySelectorAll` to act on every segment
+- Selection that overlaps an existing highlight: the toolbar swaps "Highlight" → "Unhighlight" and hides "Note"; clicking Unhighlight sweeps all overlapping marks in one action
+
+## Floating Table of Contents (REQUIRED)
+
+Every case prep must include a floating TOC overlay for quick section navigation while reading. The static TOC at the top of the document is useful for overview and print, but once the reader scrolls past it, they need an always-accessible way to jump between sections.
+
+**Reference implementation:** `~/onchain-realestate/decks/leyad/case-prep.html` — copy the CSS (`.toc-pill`, `.toc-popup`, `.toc-list`, `.toc-item`, `.toc-current`), the HTML scaffold (`<button id="toc-pill">` + `<nav id="toc-popup">`), and the TOC IIFE verbatim. No per-target customization needed — the IIFE auto-builds the list from `h2[id]` elements.
+
+**UX (non-negotiable):**
+
+1. Small pill in the top-left corner of the viewport (`position: fixed; top: 1rem; left: 1rem`). Label: "≡ Contents". Small, unobtrusive, always visible.
+2. **Hover** the pill → popup expands downward with all sections listed. Click outside or press Escape → closes. Click the pill itself → toggles (for touch devices).
+3. **Currently-visible section is highlighted** via `IntersectionObserver` with `rootMargin: "-40% 0px -40% 0px"`. Only one item active at a time.
+4. **Click a list item** → smooth-scroll to that section with a small offset, popup closes.
+5. **Hover-gap tolerance:** invisible 12px bridge between the pill and the popup so micro-movements don't dismiss. Close is debounced 220ms on mouse-leave.
+6. **Long titles truncate** with ellipsis (single line, `white-space: nowrap`).
+7. **Coexists with the notes panel** — Contents is top-left, Notes is right-side. Both independently togglable.
+8. **Hidden in print** (the top-of-doc static `.toc` remains for printed output).
+
+## Practice Card Companion (REQUIRED)
+
+Every case prep ships with a companion `quiz.html` in the same target folder — a flashcard-based drill tool for active-recall practice before the meeting. The presenter learns through verbal rehearsal; this is the tool that makes it possible without depending on external apps.
+
+**Reference implementation:** `~/onchain-realestate/decks/leyad/quiz.html` — copy the structure, CSS, JS, and `QUESTIONS` object schema verbatim. Only the question/answer content is per-target.
+
+**Card-generation rules:**
+
+1. **30 cards total**, drawn from research brief + case prep content.
+2. **Category distribution (default):** 6 Company facts · 7 Tokenization technical · 6 Financial concepts · 5 Regulatory · 6 Anticipated objections. Adjust for target profile — e.g., for a mortgage originator, more Finance/Regulatory and fewer real-estate-structure cards; for a persona deck, rebalance "Company facts" to "Segment facts."
+3. **Difficulty mix:** ~33% easy, ~45% medium, ~22% hard. Easy = factual recall; Medium = structured explanation or multi-step reasoning; Hard = synthesis across concepts or handling aggressive pushback.
+4. **Answer length:** 2–3 sentences for Easy, 3–5 for Medium, 5–8 for Hard. Rich enough to self-grade against, concise enough to read fast.
+5. **Judge-level difficulty for objections.** The 6 Objection cards should include the hardest pushback questions from the Anticipated Q&A section of the case prep (since the case prep already identified the toughest ones). Plus add the "why you over consulting firms" and "why this platform over alternatives" meta-questions.
+
+**UX features (all present in Leyad reference, copy unchanged):**
+
+- **Silent flashcard** — question displayed, no TTS. Reader answers aloud.
+- **Textarea** below the question — for typing or device-dictation (iOS/Android keyboard mic, macOS Fn-Fn). Optional; reader can also just speak aloud and skip the textbox.
+- **Reveal button** → shows model answer.
+- **Self-grade** buttons: Perfect (keyboard 1) · Good (2) · Bad (3). Scores drive a weighted shuffle — Bad cards resurface more often; Perfect cards resurface less.
+- **Filter chips** — by category, by difficulty.
+- **localStorage persistence** — per-card review count, grade sum, last grade, last reviewed. Namespaced: `'ore-quiz-[target-name-lowercase]-v1'`.
+- **Keyboard shortcuts:** Space = reveal, 1/2/3 = grade, ← → = navigate, S = shuffle.
+- **Navigation:** prev/next/shuffle/reset buttons.
+- **Stats header:** current card position, total reviewed count, total mastered (last grade was Perfect).
+- **Mobile-responsive** — single-column nav, reduced padding, smaller font.
+- **Print-friendly** — one card per page for physical flashcards.
+- **Brand-matched** — DM Sans + DM Serif Display, `--accent: #212243`, card styling consistent with case prep.
+
+**Critical:** the `QUESTIONS` array is the only per-target content. Every other file element — CSS, HTML scaffold, state management, event handlers, shuffle algorithm — copies unchanged from the Leyad reference.
 
 ## Quality Standards
 - Minimum 5,000 words of explanatory content
@@ -253,17 +306,30 @@ Every case prep must include a self-contained annotation layer so the presenter 
 - Do not use JavaScript frameworks — vanilla JS only
 - Do not copy Nesto content — use its STRUCTURE and DEPTH as template, all content must be original
 - Do not omit the annotation layer — it is REQUIRED on every case prep
-- Do not share the `STORAGE_KEY` across targets — each case prep must namespace its localStorage so annotations don't cross-contaminate between clients
+- Do not omit the floating TOC pill — it is REQUIRED on every case prep
+- Do not omit the practice-cards companion (`quiz.html`) — it is REQUIRED alongside every case prep
+- Do not place Q&A anywhere except the LAST numbered section of the case prep — it always closes the document
+- Do not share the `STORAGE_KEY` across targets — each case prep and each quiz must namespace its localStorage (`ore-annotations-[target]-caseprep`, `ore-quiz-[target]-v1`) so state doesn't cross-contaminate between clients
 
 ## Save Location
-Save as: `~/onchain-realestate/decks/[target-name-lowercase]/case-prep.html` (same target folder as the research brief — all artifacts live together).
+
+All Phase 2 artifacts live in the target's folder — same place as the Phase 1 research brief, Phase 3 deck will land here too.
+
+- `~/onchain-realestate/decks/[target-name-lowercase]/case-prep.html` — the main document
+- `~/onchain-realestate/decks/[target-name-lowercase]/quiz.html` — the practice-cards companion
+
+Together with the existing `research-brief.md` (Phase 1) and the forthcoming `index.html` (Phase 3), the target folder is the single source of truth for that client engagement.
 
 ## CHECKPOINT 2
 Summarize for the user:
 - The top 3 strongest arguments in the prep
 - The top 3 hardest questions the target is likely to ask
 - Any areas where you had to make assumptions
-- Confirm the annotation layer is wired up: test by selecting text and verifying the toolbar appears, then check that reloading the page preserves annotations
+- Confirm Q&A is the LAST numbered section (never buried in the middle)
+- Confirm the annotation layer is wired up: select text, toolbar appears, reload preserves annotations
+- Confirm the floating TOC works: hover the top-left pill, list appears, scrolling highlights the active section
+- Confirm the practice-cards quiz is generated: 30 cards, correct category/difficulty balance, answers specific to this target
+- Provide both file paths: `case-prep.html` and `quiz.html`
 
 Then ask: **"Ready for me to build the full deck, or do you want to iterate on the case prep first?"**
 
